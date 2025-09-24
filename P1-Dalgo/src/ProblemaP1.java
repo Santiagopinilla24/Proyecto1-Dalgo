@@ -46,21 +46,20 @@ public class ProblemaP1 {
         
         int[][] m = new int[k + 1][n + 1];
         
-        // Inicializar casos base
+
         for (int j = 0; j <= n; j++) {
             m[0][j] = (j == 0) ? 0 : Integer.MIN_VALUE;
         }
         for (int i = 0; i <= k; i++) {
             m[i][0] = 0;
         }
-        
-        // Llenar la tabla DP de forma iterativa
+      
         for (int i = 1; i <= k; i++) {
             for (int j = 1; j <= n; j++) {
                 int maxVal = 0;
                 for (int x = 0; x <= j; x++) {
                     if (i == 1) {
-                        // Última celda debe usar toda la energía
+      
                         if (x == j) {
                             maxVal = Math.max(maxVal, cre[j]);
                         }
@@ -80,7 +79,7 @@ public class ProblemaP1 {
     // Se halla la creatividad de un número en especifico.
     public int NumCreatividad(int num, int[] c) {
         int r = 0;
-        int[] cCopia = c.clone(); // Trabajar con copia para no modificar el original
+        int[] cCopia = c.clone(); 
         invertir(cCopia);
         
         if (num < 0 || num > 99999) {
