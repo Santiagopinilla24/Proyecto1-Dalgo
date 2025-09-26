@@ -3,11 +3,19 @@
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
+
 import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 
 public class ProblemaP1 {
+	
+	public int[] cre;
+	
 	public static void main(String[] args) throws Exception {
 		ProblemaP1 instancia = new ProblemaP1();
 		try ( 
@@ -17,118 +25,86 @@ public class ProblemaP1 {
 			String line = br.readLine();
 			int casos = Integer.parseInt(line);
 			line = br.readLine();
-			String rStr = "";
-			for(int i=0;i<casos && line!=null && line.length()>0 && !"0".equals(line);i++) {
+			
+			for(int i=0;i<casos && line!=null && 
+					line.length()>0 && !"0".equals(line);i++) {
 				final String [] dataStr = line.split(" ");
-				final int[] numeros = Arrays.stream(dataStr).mapToInt(f->Integer.parseInt(f)).toArray();
+				final int[] numeros = Arrays.stream(dataStr).mapToInt(f->
+				Integer.parseInt(f)).toArray();
 				final int nCeldas = numeros[0];
 				final int energiaTotal = numeros[1];
 				final int[] creatividad = Arrays.copyOfRange(numeros, 2, 7); 
-				int respuesta = instancia.MaxCreatividad(nCeldas,energiaTotal,creatividad);
-				
-				if(i == casos-1) {
-					rStr += respuesta;
-				}
-				else{
-					rStr += respuesta+"\n";}
-				
-				line = br.readLine();
-			}
-			System.out.println(rStr);
+				ExecutorService executor = Executors.newSingleThreadExecutor();
+		            Future<Integer> future = executor.submit(() -> {
+		                return instancia.MaxCreatividad(nCeldas, energiaTotal, creatividad);
+		            });
+				int respuesta;
+	            try {
+	                respuesta = future.get(180, TimeUnit.SECONDS);
+	                System.out.println(respuesta);
+	            } catch (TimeoutException e) {
+	                future.cancel(true);
+	                respuesta = NumCreatividad(energiaTotal,creatividad);
+	                System.out.println(respuesta);
+	            } finally {
+	                executor.shutdownNow();
+	            }
+	         
+
+	            line = br.readLine();
+	        }
+			
 		}
 	}
 	
-    public int MaxCreatividad(int k, int n, int[] creatividad) {
-        int[] cre = new int[n + 1];
-        for (int x = 0; x <= n; x++) {
-            cre[x] = NumCreatividad(x, creatividad);
+    public int MaxCreatividad(int k, int n, int[] c) {
+    	cre = new int[n + 1];
+       
+        
+        for (int num = 0; num <= n; num++) {
+            cre[num] = NumCreatividad(num, c);
         }
         
-        int[][] m = new int[k + 1][n + 1];
+        int[][] dp = new int[k + 1][n + 1];
         
-
         for (int j = 0; j <= n; j++) {
-            m[0][j] = (j == 0) ? 0 : Integer.MIN_VALUE;
+            dp[1][j] = cre[j]; 
         }
-        for (int i = 0; i <= k; i++) {
-            m[i][0] = 0;
-        }
-      
-        for (int i = 1; i <= k; i++) {
-            for (int j = 1; j <= n; j++) {
-                int maxVal = 0;
+        
+        for (int i = 2; i <= k; i++) {
+            for (int j = 0; j <= n; j++) {
+     
+                int maxVal = dp[i][j];
                 for (int x = 0; x <= j; x++) {
-                    if (i == 1) {
-      
-                        if (x == j) {
-                            maxVal = Math.max(maxVal, cre[j]);
-                        }
-                    } else {
-                        if (m[i - 1][j - x] >= 0) {
-                            maxVal = Math.max(maxVal, m[i - 1][j - x] + cre[x]);
-                        }
+                    if (dp[i-1][j-x] + cre[x] > maxVal) {
+                        maxVal = dp[i-1][j-x] + cre[x];
                     }
+      
+                    if (x > 1000 && cre[x] < maxVal / 100) break;
                 }
-                m[i][j] = maxVal;
+                dp[i][j] = maxVal;
             }
         }
         
-        return m[k][n];
+        return dp[k][n];
     }
     
     // Se halla la creatividad de un número en especifico.
-    public int NumCreatividad(int num, int[] c) {
+    public static int NumCreatividad(int num, int[] c) {
+         
+        if (num < 0 || num > 100000) {
+            throw new IllegalArgumentException("El número debe estar entre 0 y 100000");
+        }
         int r = 0;
-        int[] cCopia = c.clone(); 
-        invertir(cCopia);
+        int temp = num;
         
-        if (num < 0 || num > 99999) {
-            throw new IllegalArgumentException("El número debe estar entre 0 y 99999");
-        }
-        
-        String numeroStr = String.format("%05d", num);
-        List<Integer> digitos = new ArrayList<>();
-        for (int i = 0; i < numeroStr.length(); i++) {
-            char digitoChar = numeroStr.charAt(i);
-            int digito = Character.getNumericValue(digitoChar);
-            digitos.add(digito);
-        }
-        
-        for(int i = 0; i < digitos.size(); i++) {
-            if (digitos.get(i) == 3) {
-                r += cCopia[i];
-            }
-            if (digitos.get(i) == 6) {
-                r += cCopia[i] * 2;
-            }
-            if (digitos.get(i) == 9) {
-                r += cCopia[i] * 3;
-            }
+        for (int i = 0; i < 5 && temp > 0; i++) {
+            int d = temp % 10;
+            temp /= 10;
+            if (d == 3) r += c[i];
+            else if (d == 6) r += 2 * c[i];
+            else if (d == 9) r += 3 * c[i];
         }
         return r;
-    }
-	
-	 public static void invertir(int[] array) {
-	        int inicio = 0;
-	        int fin = array.length - 1;
-	        
-	        while (inicio < fin) {
-	            int temp = array[inicio];
-	            array[inicio] = array[fin];
-	            array[fin] = temp;
-	            
-	            inicio++;
-	            fin--;
-	        }
-	    }
-	 
-//	 public static void imprimir(int[][] matriz) {
-//	        for (int i = 0; i < matriz.length; i++) {
-//	            for (int j = 0; j < matriz[i].length; j++) {
-//	                System.out.printf("%4d", matriz[i][j]); // 4 espacios de ancho
-//	            }
-//	            System.out.println();
-//	        }
-//	    }
-	
+    }	
 }
